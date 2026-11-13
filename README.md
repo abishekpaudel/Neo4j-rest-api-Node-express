@@ -1,32 +1,42 @@
 # Neo4j CRUD REST API — Node.js and Express
 
-An educational REST API showing how a Node.js service connects to a **Neo4j graph database** through the `neo4j-driver` package.
+Educational REST API showing how an Express service connects to Neo4j using `neo4j-driver`.
 
-## Endpoints in the current implementation
+## Endpoints
 
-| Method | Route | Operation |
+| Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/` | List `User` nodes |
-| GET | `/:id` | Find a user by `_id` |
-| POST | `/` | Create a user |
-| PUT | `/:id` | Update user properties |
-| DELETE | `/:id` | Delete a user |
+| GET | `/` | List users (excludes credential fields) |
+| GET | `/:id` | Get user by ID (404 when absent) |
+| POST | `/` | Create user with name, email, password |
+| PUT | `/:id` | Update name, email or password |
+| DELETE | `/:id` | Delete user; returns remaining users |
 
 ## Run locally
 
-1. Install Node.js and a local Neo4j database.
+1. Install Node.js and Neo4j.
 2. Run `npm install`.
-3. Create your own configuration: `cp .env.example .env`. Replace the placeholder password with a **local** Neo4j credential.
-4. Run `npm start`; the application listens on the `PORT` defined in `.env` (example: `8001`).
+3. Copy `cp .env.example .env` and set a **local** Neo4j username/password.
+4. Run `npm start`. The app listens on the `PORT` environment variable (example: 8001).
 
-The app reads `url`, `db_username`, `db_password` and `database` from its environment.
+Required variables: `url`, `db_username`, `db_password`, `database`, `PORT`.
 
-## Security warning
+## Security improvements proposed in this branch
 
-**This repository contains prototype code and should not be deployed publicly as-is.** The original model implementation interpolates input into Cypher query strings, which can enable Cypher injection; it also models a plaintext password property and has limited validation and error handling. Use **parameterized Cypher queries**, appropriate authentication, password hashing, and response filtering before production use.
+- Parameterize all user input in Cypher queries rather than interpolating it.
+- Hash newly written passwords using Node.js `scrypt` and unique random salts.
+- Exclude credential fields from API output.
+- Use short-lived database sessions and close each after the query.
+- Return controlled errors instead of internal database stack traces.
 
-The tracked `.env.example` has been changed to local placeholders. If any previously committed credentials were real, rotate them; replacing the current example does **not** remove older Git commits.
+### Important compatibility and security limitations
+
+- **Prototype only; not production-ready.** Routes still lack authentication, authorization, access controls, account/email uniqueness, request rate limiting and complete automated tests.
+- Existing rows created before this change may have a plaintext `password` property; **this branch does not automatically migrate or delete that data**. Review/migrate any test database before deployment.
+- Writing new `passwordHash` and `passwordSalt` fields changes stored schema expectations.
+- Previously published example credentials should be rotated if any were real. Replacing the current `.env.example` does not erase historical Git commits.
+- Before merging, test against a **throwaway Neo4j database** and review the new query semantics. No live database test has been run.
 
 ## Author
 
-**Abishek Paudel** · [Portfolio](https://abishekpaudel.com.np) · [LinkedIn](https://www.linkedin.com/in/abishekpaudel/)
+**Abishek Paudel** — [Portfolio](https://abishekpaudel.com.np) · [LinkedIn](https://www.linkedin.com/in/abishekpaudel/)

@@ -1,27 +1,27 @@
-import {Router}  from "express";
-import userModel from '../models/user.js'
-const user = Router()
+import { Router } from "express";
+import userModel from "../models/user.js";
 
+const user = Router();
 
-user.get('/', async (req,res)=>{
-    const result = await userModel.findAll()
-    res.json(result)
-})
-user.get('/:id', async (req,res)=>{
-    const result = await userModel.findById(req.params.id)
-    res.json(result)
-})
-user.post('/', async (req,res)=>{
-    const result = await userModel.create(req.body)
-    res.json(result)
-})
-user.put('/:id', async (req,res)=>{
-    const result = await userModel.findByIdAndUpdate(req.params.id, req.body)
-    res.json(result)
-})
-user.delete('/:id', async (req,res)=>{
-    const result = await userModel.findByIdAndDelete(req.params.id)
-    res.json(result)
-})
+function action(handler) {
+  return async (req, res) => {
+    try {
+      const result = await handler(req);
+      if (result === null) return res.status(404).json({ message: "User not found" });
+      return res.json(result);
+    } catch (error) {
+      const status = error.status === 400 ? 400 : 500;
+      return res.status(status).json({
+        message: status === 400 ? error.message : "Unable to complete this request"
+      });
+    }
+  };
+}
 
-export default user
+user.get("/", action(() => userModel.findAll()));
+user.get("/:id", action((req) => userModel.findById(req.params.id)));
+user.post("/", action((req) => userModel.create(req.body)));
+user.put("/:id", action((req) => userModel.findByIdAndUpdate(req.params.id, req.body)));
+user.delete("/:id", action((req) => userModel.findByIdAndDelete(req.params.id)));
+
+export default user;
